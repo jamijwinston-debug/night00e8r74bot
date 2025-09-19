@@ -3,6 +3,7 @@ import logging
 import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, List
+import random
 
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
@@ -341,7 +342,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(auto_reply_text)
     else:
         # Send a random predefined response
-        import random
         response = random.choice(AUTO_REPLY_RESPONSES)
         await update.message.reply_text(response)
 
@@ -398,28 +398,12 @@ def main():
     # Start the scheduler
     scheduler.start()
     
-    # Start the Bot
-    print("Bot is running...")
-    
-    # Use webhook for production (Render) and polling for development
-    if os.getenv('RENDER'):
-        # Get Render-specific port
-        port = int(os.environ.get('PORT', 8443))
-        webhook_url = os.getenv('WEBHOOK_URL')
-        
-        if webhook_url:
-            application.run_webhook(
-                listen="0.0.0.0",
-                port=port,
-                url_path=BOT_TOKEN,
-                webhook_url=f"{webhook_url}/{BOT_TOKEN}"
-            )
-        else:
-            logger.warning("WEBHOOK_URL not set, using polling instead")
-            application.run_polling()
-    else:
-        # Use polling for local development
-        application.run_polling()
+    # Start the Bot with polling (for Background Worker)
+    print("Bot is running with polling...")
+    application.run_polling(
+        drop_pending_updates=True,
+        allowed_updates=Update.ALL_TYPES
+    )
 
 if __name__ == '__main__':
     main()
